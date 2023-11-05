@@ -1,0 +1,5 @@
+# run the server in watch mode
+cargo watch -q -c -w src/ -x run
+
+# run the tests in watch mode
+cargo watch -q -c -w tests/ -x "test -q quick_dev -- --nocapture"
