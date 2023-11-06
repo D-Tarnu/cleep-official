@@ -13,9 +13,17 @@ async fn quick_dev() -> Result<()> {
         "username": "chance"
     })).await?.print().await?;
     hc.do_post("/users", json!({
-        "username": "mike"
+        "username": "dan"
+    })).await?.print().await?;
+    hc.do_post("/users", json!({
+        "username": "chance"
     })).await?.print().await?;
  
+    hc.do_get("/listusers").await?.print().await?;
+    hc.do_post("/friends/request", json!({
+        "current_username": "chance",
+        "target_username": "dan"
+    })).await?.print().await?;
     hc.do_get("/listusers").await?.print().await?;
     Ok(())
 }
