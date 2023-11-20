@@ -2,7 +2,7 @@
 cargo watch -q -c -w src/ -x run
 
 # run the tests in watch mode
-cargo watch -q -c -w tests/ -x "test -q quick_dev -- --nocapture"
+cargo watch -q -c -w tests/ -x "test -q oidc_client_test -- --nocapture"
 
 
 # postgres commands

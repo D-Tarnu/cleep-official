@@ -2,6 +2,8 @@ use axum::{
     extract::State,
     http::StatusCode,
     routing::{get, post},
+    TypedHeader,
+    headers::{Authorization, authorization::Bearer},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
@@ -37,6 +39,7 @@ async fn main() {
         .await
         .unwrap();
     let app = Router::new()
+        .route("/", get(welcome))
         .route("/users", get(list_users).post(create_user))
         .with_state(pool);
 
@@ -50,13 +53,29 @@ async fn main() {
         .unwrap();
 }
 
+async fn welcome(
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>
+) ->Result<(StatusCode, String), (StatusCode, String)> {
+    Ok((StatusCode::OK, format!("Welcome {}!", auth_header.token())))
+}
+
 async fn upload() {}
 
 // take in a filename
 async fn get_thumbnail() {}
 
-async fn list_thumbnails() {}
 
+
+async fn list_thumbnails(
+    pool: State<PgPool>,
+    TypedHeader(auth_header): TypedHeader<Authorization<Bearer>>
+) -> Result<(StatusCode, Json<Vec<User>>), (StatusCode, String)> {
+    println!("{}", auth_header.token());
+    Ok((StatusCode::OK, Json(vec![])))
+
+}
+
+// TODO (crebh): impl pagination
 async fn list_users(
     pool: State<PgPool>,
 ) -> Result<(StatusCode, Json<Vec<User>>), (StatusCode, String)> {
@@ -84,12 +103,20 @@ async fn create_user(
         })
         .fetch_one(&*pool)
         .await
-        .map_err(internal_error)?;
+        .map_err(
+            |err| err.into_database_error().map_or(
+                (StatusCode::INTERNAL_SERVER_ERROR, "Something went horribly wrong".to_string()),
+                |err| {
+                    if err.is_unique_violation() {
+                        return (StatusCode::BAD_REQUEST, "Username already taken".to_string())
+                    }
+                    (StatusCode::INTERNAL_SERVER_ERROR, err.to_string())
+                }))?;
 
     Ok((StatusCode::CREATED, Json(user)))
 }
 
-async fn send_friend_request(
+async fn create_friend_request(
     pool: State<PgPool>,
     Json(payload): Json<SendFriendRequest>,
 ) -> Result<(StatusCode, String), (StatusCode, String)> {
